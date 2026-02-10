@@ -1,0 +1,5 @@
+# Mojeek API Configuration
+# Replace YOUR_MOJEEK_API_KEY_HERE with your actual API key
+
+MOJEEK_API_KEY=YOUR_MOJEEK_API_KEY_HERE
+PORT=3000
