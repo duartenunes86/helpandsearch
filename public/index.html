@@ -83,6 +83,19 @@
             color: #4285f4;
         }
 
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .home-logo {
+                font-size: 36px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .home-logo {
+                font-size: 28px;
+            }
+        }
+
         .home-search-box {
             width: 100%;
             max-width: 584px;
@@ -106,6 +119,17 @@
             position: relative;
             width: 100%;
             max-width: 584px;
+        }
+
+        @media (max-width: 768px) {
+            .home-container {
+                padding: 0 15px;
+            }
+            
+            .home-search-box {
+                font-size: 14px;
+                padding: 12px 45px 12px 15px;
+            }
         }
 
         .results-container {
@@ -197,7 +221,7 @@
                 HelpAndSearch.com
             </div>
             <div class="home-search-container">
-                <input type="text" class="home-search-box" id="homeSearchInput" placeholder="When you search here you are helping homeless people">
+                <input type="text" class="home-search-box" id="homeSearchInput" placeholder="Search the web...">
                 <button class="search-btn" onclick="performSearch()">🔍</button>
             </div>
         </div>
