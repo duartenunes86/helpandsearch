@@ -232,7 +232,7 @@
         <div class="header">
             <a href="#" class="logo" onclick="showHome()">HelpAndSearch.com</a>
             <div class="search-container">
-                <input type="text" class="search-box" id="resultsSearchInput" placeholder="Search the web...">
+                <input type="text" class="search-box" id="resultsSearchInput" placeholder="When you search here you help homeless charities">
                 <button class="search-btn" onclick="performSearch()">🔍</button>
             </div>
         </div>
@@ -277,7 +277,16 @@
         async function performSearch() {
             const homeInput = document.getElementById('homeSearchInput');
             const resultsInput = document.getElementById('resultsSearchInput');
-            const query = homeInput.value.trim() || resultsInput.value.trim();
+            
+            // Get the query from whichever input is active/has content
+            let query = '';
+            if (document.getElementById('homeView').classList.contains('hidden')) {
+                // We're on results page, use results input
+                query = resultsInput.value.trim();
+            } else {
+                // We're on home page, use home input
+                query = homeInput.value.trim();
+            }
 
             if (!query) return;
 
