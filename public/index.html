@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HelpAndSearch - Your Search Engine</title>
+    <title>HelpAndSearch - Search that helps homeless charities</title>
+    
+    <!-- OpenSearch Description for adding as default search engine -->
+    <link rel="search" type="application/opensearchdescription+xml" 
+          href="/opensearch.xml" 
+          title="HelpAndSearch">
+    
     <style>
         * {
             margin: 0;
@@ -12,24 +18,36 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            background: #f8f9fa;
+            color: #333;
         }
 
+        /* Header for results page */
         .header {
-            padding: 20px 30px;
+            background: white;
+            padding: 20px 40px;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border-bottom: 1px solid #e8eaed;
         }
 
         .logo {
             font-size: 24px;
-            font-weight: bold;
-            color: #4285f4;
+            font-weight: 600;
+            color: #1a73e8;
             text-decoration: none;
+            white-space: nowrap;
+            transition: color 0.2s;
+        }
+
+        .logo:hover {
+            color: #1557b0;
         }
 
         .search-container {
@@ -47,12 +65,17 @@
             border-radius: 24px;
             font-size: 16px;
             outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-box:hover {
             box-shadow: 0 1px 6px rgba(32,33,36,.28);
+            border-color: rgba(223,225,229,0);
         }
 
         .search-box:focus {
             box-shadow: 0 1px 6px rgba(32,33,36,.28);
-            border-color: transparent;
+            border-color: rgba(223,225,229,0);
         }
 
         .search-btn {
@@ -62,10 +85,11 @@
             border: none;
             cursor: pointer;
             font-size: 20px;
-            color: #4285f4;
             padding: 5px;
+            color: #1a73e8;
         }
 
+        /* Home page container */
         .home-container {
             flex: 1;
             display: flex;
@@ -73,96 +97,119 @@
             justify-content: center;
             align-items: center;
             padding: 0 20px;
-            margin-top: 0;
+            text-align: center;
+        }
+
+        .home-content {
+            max-width: 650px;
+            width: 100%;
         }
 
         .home-logo {
-            font-size: 72px;
-            font-weight: bold;
-            margin-bottom: 30px;
-            color: #4285f4;
-        }
-
-        /* Mobile responsive styles */
-        @media (max-width: 768px) {
-            .home-logo {
-                font-size: 36px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .home-logo {
-                font-size: 28px;
-            }
-        }
-
-        .home-search-box {
-            width: 100%;
-            max-width: 584px;
-            padding: 14px 50px 14px 20px;
-            border: 1px solid #dfe1e5;
-            border-radius: 24px;
-            font-size: 16px;
-            outline: none;
-        }
-
-        .home-search-box:hover {
-            box-shadow: 0 1px 6px rgba(32,33,36,.28);
-        }
-
-        .home-search-box:focus {
-            box-shadow: 0 1px 6px rgba(32,33,36,.28);
-            border-color: transparent;
+            font-size: 64px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            color: #1a73e8;
+            letter-spacing: -1px;
         }
 
         .home-search-container {
             position: relative;
             width: 100%;
-            max-width: 584px;
+            margin-bottom: 30px;
         }
 
-        @media (max-width: 768px) {
-            .home-container {
-                padding: 0 15px;
-            }
-            
-            .home-search-box {
-                font-size: 14px;
-                padding: 12px 45px 12px 15px;
-            }
+        .home-search-box {
+            width: 100%;
+            padding: 16px 60px 16px 24px;
+            border: 1px solid #dfe1e5;
+            border-radius: 28px;
+            font-size: 16px;
+            outline: none;
+            background: white;
+            transition: all 0.2s;
         }
 
+        .home-search-box:hover {
+            box-shadow: 0 2px 8px rgba(32,33,36,.15);
+            border-color: rgba(223,225,229,0);
+        }
+
+        .home-search-box:focus {
+            box-shadow: 0 2px 8px rgba(32,33,36,.15);
+            border-color: rgba(223,225,229,0);
+        }
+
+        /* Add to browser button */
+        .add-to-browser-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: white;
+            border: 1px solid #dadce0;
+            border-radius: 24px;
+            color: #1a73e8;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .add-to-browser-btn:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-color: #1a73e8;
+        }
+
+        .add-to-browser-btn::before {
+            content: "🔍";
+            font-size: 16px;
+        }
+
+        /* Results container */
         .results-container {
-            max-width: 800px;
-            margin: 20px auto;
+            max-width: 850px;
+            margin: 30px auto;
             padding: 0 20px;
         }
 
         .result-item {
-            margin-bottom: 30px;
+            background: white;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            border: 1px solid #f0f0f0;
+            transition: all 0.2s;
+        }
+
+        .result-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-color: #e0e0e0;
         }
 
         .result-url {
-            font-size: 14px;
-            color: #5f6368;
-            margin-bottom: 3px;
             display: flex;
             align-items: center;
             gap: 8px;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #5f6368;
         }
 
         .result-favicon {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
         }
 
         .result-title {
             font-size: 20px;
+            font-weight: 400;
             color: #1a0dab;
             text-decoration: none;
-            margin-bottom: 3px;
             display: block;
+            margin-bottom: 6px;
             line-height: 1.3;
         }
 
@@ -170,26 +217,27 @@
             text-decoration: underline;
         }
 
-        .result-title:visited {
-            color: #681da8;
-        }
-
         .result-description {
             font-size: 14px;
             color: #4d5156;
-            line-height: 1.6;
+            line-height: 1.58;
         }
 
         .loading {
             text-align: center;
-            padding: 40px;
+            padding: 60px 20px;
             color: #5f6368;
+            font-size: 16px;
         }
 
         .error {
             text-align: center;
-            padding: 40px;
+            padding: 40px 20px;
             color: #d93025;
+            background: white;
+            margin: 20px;
+            border-radius: 8px;
+            border: 1px solid #f0f0f0;
         }
 
         .hidden {
@@ -203,13 +251,65 @@
         }
 
         footer {
-            background-color: #f2f2f2;
-            padding: 15px 30px;
+            background: white;
+            padding: 20px 30px;
             margin-top: auto;
-            border-top: 1px solid #dadce0;
+            border-top: 1px solid #e8eaed;
             color: #70757a;
             font-size: 14px;
             text-align: center;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .home-logo {
+                font-size: 40px;
+            }
+
+            .home-container {
+                padding: 0 15px;
+            }
+
+            .home-search-box {
+                font-size: 14px;
+                padding: 14px 55px 14px 20px;
+            }
+
+            .add-to-browser-btn {
+                font-size: 13px;
+                padding: 10px 24px;
+            }
+
+            .result-title {
+                font-size: 18px;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .logo {
+                font-size: 18px;
+            }
+
+            .search-container {
+                max-width: 100%;
+            }
+
+            .result-item {
+                padding: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .home-logo {
+                font-size: 32px;
+            }
+
+            .home-search-box {
+                font-size: 13px;
+                padding: 12px 50px 12px 18px;
+            }
         }
     </style>
 </head>
@@ -217,12 +317,13 @@
     <!-- Home View -->
     <div id="homeView">
         <div class="home-container">
-            <div class="home-logo">
-                HelpAndSearch.com
-            </div>
-            <div class="home-search-container">
-                <input type="text" class="home-search-box" id="homeSearchInput" placeholder="When you search here you help homeless charities">
-                <button class="search-btn" onclick="performSearch()">🔍</button>
+            <div class="home-content">
+                <div class="home-logo">HelpAndSearch.com</div>
+                <div class="home-search-container">
+                    <input type="text" class="home-search-box" id="homeSearchInput" placeholder="When you search here you help homeless charities">
+                    <button class="search-btn" onclick="performSearch()">🔍</button>
+                </div>
+                <a href="#" class="add-to-browser-btn" onclick="addSearchEngine(event)">Add HelpAndSearch to your browser</a>
             </div>
         </div>
     </div>
@@ -246,7 +347,7 @@
     </div>
 
     <footer>
-        © 2026 HelpAndSearch.com - All rights reserved
+        © 2026 HelpAndSearch.com - All rights reserved | Every search helps homeless charities
     </footer>
 
     <script>
@@ -272,6 +373,23 @@
         function showResults() {
             document.getElementById('homeView').classList.add('hidden');
             document.getElementById('resultsView').classList.remove('hidden');
+        }
+
+        function addSearchEngine(event) {
+            event.preventDefault();
+            
+            // Check if browser supports adding search engines
+            if (window.external && window.external.AddSearchProvider) {
+                // For older browsers
+                window.external.AddSearchProvider('/opensearch.xml');
+            } else {
+                // For modern browsers, show instructions
+                alert('To add HelpAndSearch as your default search engine:\n\n' +
+                      '1. Click the three dots (⋮) in your browser\n' +
+                      '2. Go to Settings > Search Engine\n' +
+                      '3. Select "Manage search engines"\n' +
+                      '4. Add HelpAndSearch with URL: ' + window.location.origin + '/api/search?q=%s');
+            }
         }
 
         async function performSearch() {
@@ -349,7 +467,10 @@
             const totalResults = data.response.head?.hits || resultCount;
             statsDiv.textContent = `About ${totalResults.toLocaleString()} results`;
 
-            // Display results
+            // Clear previous results
+            resultsDiv.innerHTML = '';
+            
+            // Display web results
             data.response.results.forEach(result => {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'result-item';
