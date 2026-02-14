@@ -250,6 +250,108 @@
             margin-bottom: 20px;
         }
 
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #1a73e8;
+            font-size: 22px;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #5f6368;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .modal-body {
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .modal-body h3 {
+            color: #1a73e8;
+            font-size: 16px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .modal-body ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .modal-body li {
+            margin-bottom: 8px;
+        }
+
+        .modal-body code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #d93025;
+        }
+
+        .browser-icon {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+
         footer {
             background: white;
             padding: 20px 30px;
@@ -346,6 +448,19 @@
         </div>
     </div>
 
+    <!-- Modal for browser instructions -->
+    <div id="addBrowserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔍 Add HelpAndSearch</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content will be inserted by JavaScript -->
+            </div>
+        </div>
+    </div>
+
     <footer>
         © 2026 HelpAndSearch.com - All rights reserved | Every search helps homeless charities
     </footer>
@@ -378,28 +493,114 @@
         function addSearchEngine(event) {
             event.preventDefault();
             
-            // Show instructions modal/alert
-            const instructions = 
-                '📌 Add HelpAndSearch to Your Browser:\n\n' +
-                '🔹 Chrome/Edge:\n' +
-                '1. Go to Settings > Search Engine\n' +
-                '2. Click "Manage search engines and site search"\n' +
-                '3. Click "Add" next to "Site search"\n' +
-                '4. Enter:\n' +
-                '   • Name: HelpAndSearch\n' +
-                '   • Shortcut: helpandsearch\n' +
-                '   • URL: ' + window.location.origin + '/api/search?q=%s\n' +
-                '5. Click "Add", then click the three dots and "Make default"\n\n' +
-                '🔹 Firefox:\n' +
-                '1. Click the search bar\n' +
-                '2. Look for "Add HelpAndSearch" at the bottom\n' +
-                '3. Click it to add!\n\n' +
-                '🔹 Safari:\n' +
-                '1. Go to Safari > Settings > Search\n' +
-                '2. Visit helpandsearch.com first\n' +
-                '3. Then you can select it from the dropdown';
+            // Detect browser
+            const userAgent = navigator.userAgent.toLowerCase();
+            let browser = 'chrome'; // default
             
-            alert(instructions);
+            if (userAgent.indexOf('firefox') > -1) {
+                browser = 'firefox';
+            } else if (userAgent.indexOf('safari') > -1 && userAgent.indexOf('chrome') === -1) {
+                browser = 'safari';
+            } else if (userAgent.indexOf('edg') > -1) {
+                browser = 'edge';
+            } else if (userAgent.indexOf('brave') > -1 || navigator.brave) {
+                browser = 'brave';
+            }
+            
+            // Get modal elements
+            const modal = document.getElementById('addBrowserModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            // Create instructions based on browser
+            let instructions = '';
+            const searchUrl = window.location.origin + '/api/search?q=%s';
+            
+            if (browser === 'firefox') {
+                instructions = `
+                    <h3><span class="browser-icon">🦊</span>Firefox</h3>
+                    <ol>
+                        <li>Click on the <strong>address bar</strong></li>
+                        <li>Look for <strong>"Add HelpAndSearch"</strong> in the dropdown</li>
+                        <li>Click it to add!</li>
+                        <li>Or go to Settings → Search → Add search engine</li>
+                    </ol>
+                `;
+            } else if (browser === 'safari') {
+                instructions = `
+                    <h3><span class="browser-icon">🧭</span>Safari</h3>
+                    <ol>
+                        <li>Go to <strong>Safari → Settings → Search</strong></li>
+                        <li>Unfortunately, Safari requires extensions to add custom search engines</li>
+                        <li>You can bookmark this page and use it directly!</li>
+                    </ol>
+                `;
+            } else if (browser === 'edge') {
+                instructions = `
+                    <h3><span class="browser-icon">🔷</span>Microsoft Edge</h3>
+                    <ol>
+                        <li>Click the three dots (⋮) → <strong>Settings</strong></li>
+                        <li>Go to <strong>Privacy, search, and services</strong> → Scroll to <strong>Services</strong></li>
+                        <li>Click <strong>Address bar and search</strong></li>
+                        <li>Click <strong>Manage search engines</strong></li>
+                        <li>Click <strong>Add</strong></li>
+                        <li>Enter:<br>
+                            • Name: <code>HelpAndSearch</code><br>
+                            • Keyword: <code>helpandsearch</code><br>
+                            • URL: <code>${searchUrl}</code>
+                        </li>
+                        <li>Click <strong>Add</strong>, then click ⋮ → <strong>Make default</strong></li>
+                    </ol>
+                `;
+            } else if (browser === 'brave') {
+                instructions = `
+                    <h3><span class="browser-icon">🦁</span>Brave Browser</h3>
+                    <ol>
+                        <li>Click the three lines (☰) → <strong>Settings</strong></li>
+                        <li>Go to <strong>Search engine</strong></li>
+                        <li>Click <strong>Manage search engines and site search</strong></li>
+                        <li>Under "Site search", click <strong>Add</strong></li>
+                        <li>Enter:<br>
+                            • Name: <code>HelpAndSearch</code><br>
+                            • Shortcut: <code>helpandsearch</code><br>
+                            • URL: <code>${searchUrl}</code>
+                        </li>
+                        <li>Click <strong>Add</strong></li>
+                        <li>Click the three dots next to HelpAndSearch → <strong>Make default</strong></li>
+                    </ol>
+                `;
+            } else { // Chrome and others
+                instructions = `
+                    <h3><span class="browser-icon">🌐</span>Chrome / Chromium</h3>
+                    <ol>
+                        <li>Click the three dots (⋮) → <strong>Settings</strong></li>
+                        <li>Go to <strong>Search engine</strong></li>
+                        <li>Click <strong>Manage search engines and site search</strong></li>
+                        <li>Under "Site search", click <strong>Add</strong></li>
+                        <li>Enter:<br>
+                            • Name: <code>HelpAndSearch</code><br>
+                            • Shortcut: <code>helpandsearch</code><br>
+                            • URL: <code>${searchUrl}</code>
+                        </li>
+                        <li>Click <strong>Add</strong></li>
+                        <li>Click the three dots next to HelpAndSearch → <strong>Make default</strong></li>
+                    </ol>
+                `;
+            }
+            
+            modalBody.innerHTML = instructions;
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('addBrowserModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('addBrowserModal');
+            if (event.target === modal) {
+                closeModal();
+            }
         }
 
         async function performSearch() {
