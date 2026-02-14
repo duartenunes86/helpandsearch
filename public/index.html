@@ -378,18 +378,28 @@
         function addSearchEngine(event) {
             event.preventDefault();
             
-            // Check if browser supports adding search engines
-            if (window.external && window.external.AddSearchProvider) {
-                // For older browsers
-                window.external.AddSearchProvider('/opensearch.xml');
-            } else {
-                // For modern browsers, show instructions
-                alert('To add HelpAndSearch as your default search engine:\n\n' +
-                      '1. Click the three dots (⋮) in your browser\n' +
-                      '2. Go to Settings > Search Engine\n' +
-                      '3. Select "Manage search engines"\n' +
-                      '4. Add HelpAndSearch with URL: ' + window.location.origin + '/api/search?q=%s');
-            }
+            // Show instructions modal/alert
+            const instructions = 
+                '📌 Add HelpAndSearch to Your Browser:\n\n' +
+                '🔹 Chrome/Edge:\n' +
+                '1. Go to Settings > Search Engine\n' +
+                '2. Click "Manage search engines and site search"\n' +
+                '3. Click "Add" next to "Site search"\n' +
+                '4. Enter:\n' +
+                '   • Name: HelpAndSearch\n' +
+                '   • Shortcut: helpandsearch\n' +
+                '   • URL: ' + window.location.origin + '/api/search?q=%s\n' +
+                '5. Click "Add", then click the three dots and "Make default"\n\n' +
+                '🔹 Firefox:\n' +
+                '1. Click the search bar\n' +
+                '2. Look for "Add HelpAndSearch" at the bottom\n' +
+                '3. Click it to add!\n\n' +
+                '🔹 Safari:\n' +
+                '1. Go to Safari > Settings > Search\n' +
+                '2. Visit helpandsearch.com first\n' +
+                '3. Then you can select it from the dropdown';
+            
+            alert(instructions);
         }
 
         async function performSearch() {
