@@ -513,76 +513,105 @@
             
             // Create instructions based on browser
             let instructions = '';
-            const searchUrl = window.location.origin + '/api/search?q=%s';
+            const searchUrl = window.location.origin + '/search?q=%s';
             
             if (browser === 'firefox') {
                 instructions = `
                     <h3><span class="browser-icon">🦊</span>Firefox</h3>
+                    <p style="margin-bottom: 15px;"><strong>Step 1: Add the search engine</strong></p>
                     <ol>
-                        <li>Click on the <strong>address bar</strong></li>
-                        <li>Look for <strong>"Add HelpAndSearch"</strong> in the dropdown</li>
-                        <li>Click it to add!</li>
-                        <li>Or go to Settings → Search → Add search engine</li>
+                        <li><strong>Right-click</strong> in the address bar (while on this page)</li>
+                        <li>Select <strong>"Add HelpAndSearch"</strong></li>
+                        <li>If you see "already exists" - skip to Step 2!</li>
+                    </ol>
+                    <p style="margin-top: 15px; margin-bottom: 10px;"><strong>Step 2: Make it your default</strong></p>
+                    <ol>
+                        <li>Type <code>about:preferences#search</code> in the address bar</li>
+                        <li>Or go to Settings → Search</li>
+                        <li>Under "Default Search Engine", select <strong>HelpAndSearch</strong></li>
                     </ol>
                 `;
             } else if (browser === 'safari') {
                 instructions = `
                     <h3><span class="browser-icon">🧭</span>Safari</h3>
+                    <p style="background: #fff3cd; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 14px;">
+                        ⚠️ Safari doesn't support custom search engines without extensions
+                    </p>
+                    <p><strong>Options:</strong></p>
                     <ol>
-                        <li>Go to <strong>Safari → Settings → Search</strong></li>
-                        <li>Unfortunately, Safari requires extensions to add custom search engines</li>
-                        <li>You can bookmark this page and use it directly!</li>
+                        <li>Bookmark this page and use it directly</li>
+                        <li>Or install an extension like "Any Search" from the App Store</li>
                     </ol>
                 `;
             } else if (browser === 'edge') {
                 instructions = `
                     <h3><span class="browser-icon">🔷</span>Microsoft Edge</h3>
+                    <p style="margin-bottom: 15px;"><strong>Step 1: Add the search engine</strong></p>
                     <ol>
                         <li>Click the three dots (⋮) → <strong>Settings</strong></li>
-                        <li>Go to <strong>Privacy, search, and services</strong> → Scroll to <strong>Services</strong></li>
+                        <li>Go to <strong>Privacy, search, and services</strong></li>
+                        <li>Scroll down to <strong>Services</strong></li>
                         <li>Click <strong>Address bar and search</strong></li>
                         <li>Click <strong>Manage search engines</strong></li>
                         <li>Click <strong>Add</strong></li>
                         <li>Enter:<br>
-                            • Name: <code>HelpAndSearch</code><br>
+                            • Search engine: <code>HelpAndSearch</code><br>
                             • Keyword: <code>helpandsearch</code><br>
                             • URL: <code>${searchUrl}</code>
                         </li>
-                        <li>Click <strong>Add</strong>, then click ⋮ → <strong>Make default</strong></li>
+                        <li>Click <strong>Add</strong></li>
+                    </ol>
+                    <p style="margin-top: 15px; margin-bottom: 10px;"><strong>Step 2: Make it default</strong></p>
+                    <ol>
+                        <li>Find HelpAndSearch in the list</li>
+                        <li>Click the three dots (⋮) next to it</li>
+                        <li>Click <strong>"Make default"</strong></li>
                     </ol>
                 `;
             } else if (browser === 'brave') {
                 instructions = `
                     <h3><span class="browser-icon">🦁</span>Brave Browser</h3>
+                    <p style="margin-bottom: 15px;"><strong>Step 1: Add the search engine</strong></p>
                     <ol>
                         <li>Click the three lines (☰) → <strong>Settings</strong></li>
                         <li>Go to <strong>Search engine</strong></li>
                         <li>Click <strong>Manage search engines and site search</strong></li>
                         <li>Under "Site search", click <strong>Add</strong></li>
                         <li>Enter:<br>
-                            • Name: <code>HelpAndSearch</code><br>
+                            • Search engine: <code>HelpAndSearch</code><br>
                             • Shortcut: <code>helpandsearch</code><br>
                             • URL: <code>${searchUrl}</code>
                         </li>
                         <li>Click <strong>Add</strong></li>
-                        <li>Click the three dots next to HelpAndSearch → <strong>Make default</strong></li>
+                    </ol>
+                    <p style="margin-top: 15px; margin-bottom: 10px;"><strong>Step 2: Make it default</strong></p>
+                    <ol>
+                        <li>Find HelpAndSearch in the list</li>
+                        <li>Click the three dots (⋮) next to it</li>
+                        <li>Click <strong>"Make default"</strong></li>
                     </ol>
                 `;
             } else { // Chrome and others
                 instructions = `
-                    <h3><span class="browser-icon">🌐</span>Chrome / Chromium</h3>
+                    <h3><span class="browser-icon">🌐</span>Chrome</h3>
+                    <p style="margin-bottom: 15px;"><strong>Step 1: Add the search engine</strong></p>
                     <ol>
                         <li>Click the three dots (⋮) → <strong>Settings</strong></li>
-                        <li>Go to <strong>Search engine</strong></li>
+                        <li>In the left sidebar, click <strong>Search engine</strong></li>
                         <li>Click <strong>Manage search engines and site search</strong></li>
                         <li>Under "Site search", click <strong>Add</strong></li>
                         <li>Enter:<br>
-                            • Name: <code>HelpAndSearch</code><br>
+                            • Search engine: <code>HelpAndSearch</code><br>
                             • Shortcut: <code>helpandsearch</code><br>
                             • URL: <code>${searchUrl}</code>
                         </li>
                         <li>Click <strong>Add</strong></li>
-                        <li>Click the three dots next to HelpAndSearch → <strong>Make default</strong></li>
+                    </ol>
+                    <p style="margin-top: 15px; margin-bottom: 10px;"><strong>Step 2: Make it default</strong></p>
+                    <ol>
+                        <li>Find HelpAndSearch in the list</li>
+                        <li>Click the three dots (⋮) next to it</li>
+                        <li>Click <strong>"Make default"</strong></li>
                     </ol>
                 `;
             }
