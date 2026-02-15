@@ -8,6 +8,13 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors()); // Allow requests from your frontend
 app.use(express.json());
+
+// Serve opensearch.xml with correct content type
+app.get('/opensearch.xml', (req, res) => {
+    res.type('application/opensearchdescription+xml');
+    res.sendFile('public/opensearch.xml', { root: __dirname });
+});
+
 app.use(express.static('public')); // Serve frontend files
 
 // Search endpoint - this hides your API key
@@ -23,7 +30,6 @@ app.get('/api/search', async (req, res) => {
         const params = new URLSearchParams({
             api_key: process.env.MOJEEK_API_KEY, // API key is hidden on server
             q: query,
-            t: 10,  // Number of results
             fmt: 'json'
         });
 
