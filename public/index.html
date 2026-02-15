@@ -705,6 +705,16 @@
         // Focus on search input when page loads
         window.onload = () => {
             document.getElementById('homeSearchInput').focus();
+            
+            // Check if there's a search query in the URL (from OpenSearch)
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchQuery = urlParams.get('q');
+            
+            if (searchQuery) {
+                document.getElementById('homeSearchInput').value = searchQuery;
+                document.getElementById('resultsSearchInput').value = searchQuery;
+                performSearch();
+            }
         };
     </script>
 </body>
