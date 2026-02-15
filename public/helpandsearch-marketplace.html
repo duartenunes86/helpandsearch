@@ -111,6 +111,12 @@
             }
           };
 
+          const handleCheckout = () => {
+            alert(`Thank you for your order of $${cartTotal.toFixed(2)}!\n\n100% of marketplace profits go to homeless charities.\n\nYour order has been placed successfully! 🎉`);
+            setCart([]);
+            setView('home');
+          };
+
           const handleImport = async () => {
             setImporting(true);
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -254,7 +260,7 @@
                         <div style={{ background: 'rgba(255, 215, 0, 0.1)', padding: '0.8rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
                           <p style={{ margin: 0, fontSize: '0.85rem', color: '#ffd700', textAlign: 'center' }}>❤️ Marketplace profits support homeless charities</p>
                         </div>
-                        <button style={{ width: '100%', padding: '1.2rem', background: 'linear-gradient(135deg, #ff6b35, #f7931e)', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}>Checkout</button>
+                        <button onClick={handleCheckout} style={{ width: '100%', padding: '1.2rem', background: 'linear-gradient(135deg, #ff6b35, #f7931e)', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}>Checkout</button>
                       </div>
                     </div>
                   )}
