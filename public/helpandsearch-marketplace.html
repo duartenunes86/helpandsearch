@@ -51,7 +51,7 @@
           const [registerEmail, setRegisterEmail] = useState('');
           const [registerPassword, setRegisterPassword] = useState('');
           const [registerStoreName, setRegisterStoreName] = useState('');
-          const [users] = useState([
+          const [users, setUsers] = useState([
             { id: 1, name: 'Demo Buyer', email: 'buyer@demo.com', password: 'demo123', type: 'buyer' },
             { id: 2, name: 'TechGear Pro', email: 'seller@demo.com', password: 'demo123', type: 'seller', storeName: 'TechGear Pro' }
           ]);
@@ -59,14 +59,56 @@
           const handleLogin = (e) => {
             e.preventDefault();
             const user = users.find(u => u.email === loginEmail && u.password === loginPassword);
-            if (user) { setCurrentUser(user); setIsAuthenticated(true); setShowAuthModal(false); }
-            else { alert('Try: buyer@demo.com / demo123 or seller@demo.com / demo123'); }
+            if (user) { 
+              setCurrentUser(user); 
+              setIsAuthenticated(true); 
+              setShowAuthModal(false);
+              setLoginEmail('');
+              setLoginPassword('');
+            } else { 
+              alert('Try: buyer@demo.com / demo123 or seller@demo.com / demo123'); 
+            }
+          };
+
+          const handleRegister = (e) => {
+            e.preventDefault();
+            if (!registerName || !registerEmail || !registerPassword) {
+              alert('Please fill in all fields');
+              return;
+            }
+            if (userType === 'seller' && !registerStoreName) {
+              alert('Please enter a store name');
+              return;
+            }
+            if (users.find(u => u.email === registerEmail)) {
+              alert('Email already exists!');
+              return;
+            }
+            const newUser = {
+              id: users.length + 1,
+              name: registerName,
+              email: registerEmail,
+              password: registerPassword,
+              type: userType,
+              ...(userType === 'seller' && { storeName: registerStoreName })
+            };
+            setUsers([...users, newUser]);
+            setCurrentUser(newUser);
+            setIsAuthenticated(true);
+            setShowAuthModal(false);
+            setRegisterName('');
+            setRegisterEmail('');
+            setRegisterPassword('');
+            setRegisterStoreName('');
           };
 
           const addToCart = (product) => {
             const existing = cart.find(item => item.id === product.id);
-            if (existing) { setCart(cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)); }
-            else { setCart([...cart, { ...product, quantity: 1 }]); }
+            if (existing) { 
+              setCart(cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)); 
+            } else { 
+              setCart([...cart, { ...product, quantity: 1 }]); 
+            }
           };
 
           const handleImport = async () => {
@@ -74,12 +116,23 @@
             await new Promise(resolve => setTimeout(resolve, 2000));
             const platformNames = { marketplace1: 'Marketplace A', marketplace2: 'Marketplace B' };
             const newProduct = {
-              id: Date.now(), name: `Imported Product from ${platformNames[importPlatform]}`, price: Math.floor(Math.random() * 500) + 50,
-              rating: 4.5, reviews: 234, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop",
-              sellerId: currentUser.id, sellerName: currentUser.storeName, inStock: true, category: "Electronics",
-              description: `Product imported from external marketplace`, sourceMarketplace: platformNames[importPlatform]
+              id: Date.now(), 
+              name: `Imported Product from ${platformNames[importPlatform]}`, 
+              price: Math.floor(Math.random() * 500) + 50,
+              rating: 4.5, 
+              reviews: 234, 
+              image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop",
+              sellerId: currentUser.id, 
+              sellerName: currentUser.storeName, 
+              inStock: true, 
+              category: "Electronics",
+              description: `Product imported from external marketplace`, 
+              sourceMarketplace: platformNames[importPlatform]
             };
-            setProducts([newProduct, ...products]); setImporting(false); setShowImportModal(false); setImportUrl('');
+            setProducts([newProduct, ...products]); 
+            setImporting(false); 
+            setShowImportModal(false); 
+            setImportUrl('');
           };
 
           const filteredProducts = products.filter(p => {
@@ -276,7 +329,7 @@
                         </div>
                       </form>
                     ) : (
-                      <div>
+                      <form onSubmit={handleRegister}>
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                           <button type="button" onClick={() => setUserType('buyer')} style={{ flex: 1, padding: '0.8rem', background: userType === 'buyer' ? 'rgba(255, 107, 53, 0.2)' : 'rgba(255, 255, 255, 0.05)', border: '1px solid ' + (userType === 'buyer' ? '#ff6b35' : 'rgba(255, 255, 255, 0.1)'), borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Buyer</button>
                           <button type="button" onClick={() => setUserType('seller')} style={{ flex: 1, padding: '0.8rem', background: userType === 'seller' ? 'rgba(255, 107, 53, 0.2)' : 'rgba(255, 255, 255, 0.05)', border: '1px solid ' + (userType === 'seller' ? '#ff6b35' : 'rgba(255, 255, 255, 0.1)'), borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Seller</button>
@@ -285,8 +338,8 @@
                         {userType === 'seller' && <input type="text" value={registerStoreName} onChange={(e) => setRegisterStoreName(e.target.value)} placeholder="Store Name" required style={{ width: '100%', padding: '1rem', marginBottom: '1rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }} />}
                         <input type="email" value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} placeholder="Email" required style={{ width: '100%', padding: '1rem', marginBottom: '1rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }} />
                         <input type="password" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} placeholder="Password" required style={{ width: '100%', padding: '1rem', marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }} />
-                        <button onClick={(e) => { e.preventDefault(); }} style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #ff6b35, #f7931e)', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 800, fontSize: '1rem', cursor: 'pointer' }}>Create Account</button>
-                      </div>
+                        <button type="submit" style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #ff6b35, #f7931e)', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 800, fontSize: '1rem', cursor: 'pointer' }}>Create Account</button>
+                      </form>
                     )}
                   </div>
                 </div>
