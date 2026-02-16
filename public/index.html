@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HelpAndSearch - The search that helps homeless charities</title>
+    <title>HelpAndSearch - Search that helps homeless charities</title>
     
     <!-- OpenSearch Description for adding as default search engine -->
     <link rel="search" type="application/opensearchdescription+xml" 
@@ -361,17 +361,6 @@
             line-height: 1.58;
         }
 
-        .source-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            background: #e8f0fe;
-            color: #1a73e8;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 500;
-            margin-left: 8px;
-        }
-
         /* Image results */
         .image-grid {
             display: grid;
@@ -402,15 +391,36 @@
             display: block;
         }
 
-        .image-source {
-            position: absolute;
-            bottom: 8px;
-            right: 8px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 4px 8px;
+        /* AI Results */
+        .ai-response {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin: 20px 0;
+            line-height: 1.8;
+        }
+
+        .ai-response h2 {
+            color: #1a73e8;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .ai-response p {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .ai-disclaimer {
+            background: #f8f9fa;
+            border-left: 4px solid #1a73e8;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #5f6368;
             border-radius: 4px;
-            font-size: 10px;
         }
 
         .loading {
@@ -553,6 +563,9 @@
             <div class="tab" id="imagesTab" onclick="switchTab('images')">
                 <span class="tab-icon">🖼️</span>Images
             </div>
+            <div class="tab" id="aiTab" onclick="switchTab('ai')">
+                <span class="tab-icon">🤖</span>AI
+            </div>
         </div>
         
         <div class="results-container">
@@ -565,6 +578,9 @@
             
             <!-- Image Results -->
             <div id="imageResults" class="hidden"></div>
+            
+            <!-- AI Results -->
+            <div id="aiResults" class="hidden"></div>
         </div>
     </div>
 
@@ -617,16 +633,20 @@
             // Update tab styling
             document.getElementById('webTab').classList.toggle('active', tab === 'web');
             document.getElementById('imagesTab').classList.toggle('active', tab === 'images');
+            document.getElementById('aiTab').classList.toggle('active', tab === 'ai');
             
             // Show/hide results
             document.getElementById('webResults').classList.toggle('hidden', tab !== 'web');
             document.getElementById('imageResults').classList.toggle('hidden', tab !== 'images');
+            document.getElementById('aiResults').classList.toggle('hidden', tab !== 'ai');
             
             // If switching tabs and we have a query, fetch new results
             if (currentQuery) {
                 if (tab === 'web' && document.getElementById('webResults').innerHTML === '') {
                     performSearch();
                 } else if (tab === 'images' && document.getElementById('imageResults').innerHTML === '') {
+                    performSearch();
+                } else if (tab === 'ai' && document.getElementById('aiResults').innerHTML === '') {
                     performSearch();
                 }
             }
@@ -663,14 +683,16 @@
             try {
                 if (currentTab === 'web') {
                     await fetchWebResults(query);
-                } else {
+                } else if (currentTab === 'images') {
                     await fetchImageResults(query);
+                } else if (currentTab === 'ai') {
+                    await fetchAIResults(query);
                 }
             } catch (error) {
                 console.error('Search error:', error);
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('error').classList.remove('hidden');
-                document.getElementById('error').textContent = 'An error occurred while searching. Please try again.';
+                document.getElementById('error').textContent = 'An error occurred. Please try again.';
             }
         }
 
@@ -696,6 +718,17 @@
             displayImageResults(data);
         }
 
+        async function fetchAIResults(query) {
+            const response = await fetch(`/api/search/ai?q=${encodeURIComponent(query)}`);
+            
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            displayAIResults(data);
+        }
+
         function displayWebResults(data) {
             document.getElementById('loading').classList.add('hidden');
             const resultsDiv = document.getElementById('webResults');
@@ -708,7 +741,7 @@
             }
 
             // Display stats
-            statsDiv.textContent = `About ${data.total_results} results from ${data.sources_used.mojeek ? 'Mojeek' : ''}${data.sources_used.mojeek && data.sources_used.searchcom ? ' + ' : ''}${data.sources_used.searchcom ? 'Search.com' : ''}`;
+            statsDiv.textContent = `About ${data.total_results} results`;
 
             // Clear previous results
             resultsDiv.innerHTML = '';
@@ -725,7 +758,6 @@
                     <div class="result-url">
                         <img class="result-favicon" src="https://www.google.com/s2/favicons?domain=${domain}" onerror="this.style.display='none'">
                         <span>${domain}</span>
-                        <span class="source-badge">${result.source}</span>
                     </div>
                     <a href="${result.url}" class="result-title" target="_blank">${result.title}</a>
                     <div class="result-description">${result.desc || ''}</div>
@@ -746,14 +778,14 @@
                 return;
             }
 
-            // Display stats
-            statsDiv.textContent = `${data.total_images} images from ${data.sources_used.searchcom ? 'Search.com' : ''}${data.sources_used.searchcom && data.sources_used.pixabay ? ' + ' : ''}${data.sources_used.pixabay ? 'Pixabay' : ''}`;
+            // Display stats without showing source names
+            statsDiv.textContent = `${data.total_images} images`;
 
             // Clear previous results
             resultsDiv.innerHTML = '<div class="image-grid" id="imageGrid"></div>';
             const imageGrid = document.getElementById('imageGrid');
             
-            // Display images
+            // Display images without source badges
             data.images.forEach(img => {
                 const imageItem = document.createElement('div');
                 imageItem.className = 'image-item';
@@ -761,11 +793,51 @@
 
                 imageItem.innerHTML = `
                     <img src="${img.thumbnail}" alt="${img.title}" loading="lazy">
-                    <div class="image-source">${img.source}</div>
                 `;
 
                 imageGrid.appendChild(imageItem);
             });
+        }
+
+        function displayAIResults(data) {
+            document.getElementById('loading').classList.add('hidden');
+            const resultsDiv = document.getElementById('aiResults');
+            const statsDiv = document.getElementById('stats');
+
+            // Hide stats for AI
+            statsDiv.textContent = '';
+
+            // Check if we have a response
+            if (!data.response) {
+                resultsDiv.innerHTML = '<p style="color: #5f6368;">No response generated.</p>';
+                return;
+            }
+
+            // Clear previous results
+            resultsDiv.innerHTML = '';
+
+            // Display AI response
+            const aiResponse = document.createElement('div');
+            aiResponse.className = 'ai-response';
+
+            // Format the response - split by line breaks
+            const formattedResponse = data.response.split('\n').map(line => {
+                if (line.trim().startsWith('##')) {
+                    return `<h2>${line.replace('##', '').trim()}</h2>`;
+                } else if (line.trim()) {
+                    return `<p>${line}</p>`;
+                }
+                return '';
+            }).join('');
+
+            aiResponse.innerHTML = `
+                ${formattedResponse}
+                <div class="ai-disclaimer">
+                    💡 AI-generated content powered by Search.com. Always verify important information.
+                </div>
+            `;
+
+            resultsDiv.appendChild(aiResponse);
         }
 
         function addSearchEngine(event) {
