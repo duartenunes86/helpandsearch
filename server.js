@@ -52,15 +52,31 @@ async function fetchPixabay(query, page = 1) {
 
 // Helper function to fetch images from Openverse (NO API KEY NEEDED!)
 async function fetchOpenverse(query, page = 1) {
-    const params = new URLSearchParams({
-        q: query,
-        page_size: 200,  // Get 200 images per page
-        page: page
-    });
+    try {
+        const params = new URLSearchParams({
+            q: query,
+            page_size: 200,  // Get 200 images per page
+            page: page
+        });
 
-    const response = await fetch(`https://api.openverse.org/v1/images/?${params.toString()}`);
-    if (!response.ok) throw new Error(`Openverse API error: ${response.status}`);
-    return await response.json();
+        const response = await fetch(`https://api.openverse.org/v1/images/?${params.toString()}`);
+        
+        console.log(`Openverse API call: https://api.openverse.org/v1/images/?${params.toString()}`);
+        console.log(`Openverse response status: ${response.status}`);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.log(`Openverse error response: ${errorText}`);
+            throw new Error(`Openverse API error: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log(`Openverse returned ${data.results?.length || 0} images`);
+        return data;
+    } catch (error) {
+        console.error('Openverse fetch error:', error.message);
+        throw error;
+    }
 }
 
 // Helper function to generate AI response from Search.com
