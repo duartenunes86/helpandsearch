@@ -50,18 +50,64 @@ async function fetchPixabay(query, page = 1) {
     return await response.json();
 }
 
-// Helper function to fetch images from Openverse (NO API KEY NEEDED!)
-async function fetchOpenverse(query, page = 1) {
+// Helper function to get Openverse access token
+async function getOpenverseToken() {
     try {
         const params = new URLSearchParams({
+            client_id: process.env.OPENVERSE_CLIENT_ID,
+            client_secret: process.env.OPENVERSE_CLIENT_SECRET,
+            grant_type: 'client_credentials'
+        });
+
+        const response = await fetch('https://api.openverse.org/v1/auth/token/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        });
+
+        if (!response.ok) {
+            throw new Error(`Token request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.access_token;
+    } catch (error) {
+        console.error('Openverse token error:', error.message);
+        return null;
+    }
+}
+
+// Helper function to fetch images from Openverse with authentication
+async function fetchOpenverse(query, page = 1) {
+    try {
+        // Try to get access token (if credentials are configured)
+        const accessToken = await getOpenverseToken();
+        
+        // Use higher page_size if authenticated, otherwise 20
+        const pageSize = accessToken ? 200 : 20;
+        
+        const params = new URLSearchParams({
             q: query,
-            page_size: 200,  // Get 200 images per page
+            page_size: pageSize,
             page: page
         });
 
-        const response = await fetch(`https://api.openverse.org/v1/images/?${params.toString()}`);
+        const headers = {
+            'Content-Type': 'application/json'
+        };
         
-        console.log(`Openverse API call: https://api.openverse.org/v1/images/?${params.toString()}`);
+        // Add authorization header if we have a token
+        if (accessToken) {
+            headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+
+        const response = await fetch(`https://api.openverse.org/v1/images/?${params.toString()}`, {
+            headers: headers
+        });
+        
+        console.log(`Openverse API call (authenticated: ${!!accessToken}): page_size=${pageSize}`);
         console.log(`Openverse response status: ${response.status}`);
         
         if (!response.ok) {
