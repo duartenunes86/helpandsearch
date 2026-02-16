@@ -34,32 +34,13 @@ async function fetchMojeek(query) {
     return await response.json();
 }
 
-// Helper function to fetch from Search.com
-async function fetchSearchCom(query) {
-    const response = await fetch('https://api.search.com/search', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.SEARCHCOM_API_KEY}`
-        },
-        body: JSON.stringify({
-            q: query,
-            aid: process.env.SEARCHCOM_AID,
-            format: 'json'
-        })
-    });
-
-    if (!response.ok) throw new Error(`Search.com API error: ${response.status}`);
-    return await response.json();
-}
-
 // Helper function to fetch images from Pixabay
 async function fetchPixabay(query) {
     const params = new URLSearchParams({
         key: process.env.PIXABAY_API_KEY,
         q: query,
         image_type: 'photo',
-        per_page: 20
+        per_page: 30
     });
 
     const response = await fetch(`https://pixabay.com/api/?${params.toString()}`);
@@ -67,47 +48,25 @@ async function fetchPixabay(query) {
     return await response.json();
 }
 
-// Helper function to merge and deduplicate web results
-function mergeWebResults(mojeekData, searchComData) {
-    const results = [];
-    const seenUrls = new Set();
+// Helper function to generate AI response from Search.com
+async function generateAIContent(prompt) {
+    const params = new URLSearchParams({
+        prompt: prompt,
+        subid: process.env.SEARCHCOM_AID
+    });
 
-    // Normalize Mojeek results
-    if (mojeekData?.response?.results) {
-        mojeekData.response.results.forEach(result => {
-            const url = result.url.toLowerCase();
-            if (!seenUrls.has(url)) {
-                seenUrls.add(url);
-                results.push({
-                    title: result.title,
-                    url: result.url,
-                    desc: result.desc || '',
-                    source: 'mojeek'
-                });
-            }
-        });
-    }
+    const response = await fetch(`https://search.com/api/generate_content?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+            'X-API-KEY': process.env.SEARCHCOM_API_KEY
+        }
+    });
 
-    // Normalize Search.com results
-    if (searchComData?.results) {
-        searchComData.results.forEach(result => {
-            const url = (result.url || result.link || '').toLowerCase();
-            if (url && !seenUrls.has(url)) {
-                seenUrls.add(url);
-                results.push({
-                    title: result.title || '',
-                    url: result.url || result.link || '',
-                    desc: result.description || result.snippet || result.desc || '',
-                    source: 'searchcom'
-                });
-            }
-        });
-    }
-
-    return results;
+    if (!response.ok) throw new Error(`Search.com AI error: ${response.status}`);
+    return await response.json();
 }
 
-// MIXED WEB SEARCH - Mojeek + Search.com
+// WEB SEARCH - Mojeek only
 app.get('/api/search/web', async (req, res) => {
     const query = req.query.q;
     
@@ -116,27 +75,24 @@ app.get('/api/search/web', async (req, res) => {
     }
 
     try {
-        // Fetch from both APIs in parallel
-        const [mojeekData, searchComData] = await Promise.allSettled([
-            fetchMojeek(query),
-            fetchSearchCom(query)
-        ]);
-
-        // Extract successful results
-        const mojeekResults = mojeekData.status === 'fulfilled' ? mojeekData.value : null;
-        const searchComResults = searchComData.status === 'fulfilled' ? searchComData.value : null;
-
-        // Merge and deduplicate
-        const mergedResults = mergeWebResults(mojeekResults, searchComResults);
+        const data = await fetchMojeek(query);
+        
+        // Normalize response
+        const results = [];
+        if (data?.response?.results) {
+            data.response.results.forEach(result => {
+                results.push({
+                    title: result.title,
+                    url: result.url,
+                    desc: result.desc || ''
+                });
+            });
+        }
 
         res.json({
             query: query,
-            total_results: mergedResults.length,
-            results: mergedResults,
-            sources_used: {
-                mojeek: mojeekData.status === 'fulfilled',
-                searchcom: searchComData.status === 'fulfilled'
-            }
+            total_results: results.length,
+            results: results
         });
 
     } catch (error) {
@@ -148,7 +104,7 @@ app.get('/api/search/web', async (req, res) => {
     }
 });
 
-// MIXED IMAGE SEARCH - Search.com + Pixabay
+// IMAGE SEARCH - Pixabay only
 app.get('/api/search/images', async (req, res) => {
     const query = req.query.q;
     
@@ -157,63 +113,52 @@ app.get('/api/search/images', async (req, res) => {
     }
 
     try {
-        // Fetch from both APIs in parallel
-        const [searchComData, pixabayData] = await Promise.allSettled([
-            fetchSearchCom(query),
-            fetchPixabay(query)
-        ]);
-
+        const data = await fetchPixabay(query);
+        
         const images = [];
-        const seenUrls = new Set();
-
-        // Extract Search.com images (if they have an images field)
-        if (searchComData.status === 'fulfilled' && searchComData.value?.images) {
-            searchComData.value.images.forEach(img => {
-                const url = img.url || img.image || img.thumbnail;
-                if (url && !seenUrls.has(url)) {
-                    seenUrls.add(url);
-                    images.push({
-                        url: url,
-                        thumbnail: img.thumbnail || url,
-                        title: img.title || query,
-                        source: 'searchcom'
-                    });
-                }
-            });
-        }
-
-        // Extract Pixabay images
-        if (pixabayData.status === 'fulfilled' && pixabayData.value?.hits) {
-            pixabayData.value.hits.forEach(img => {
-                const url = img.largeImageURL;
-                if (!seenUrls.has(url)) {
-                    seenUrls.add(url);
-                    images.push({
-                        url: url,
-                        thumbnail: img.previewURL,
-                        title: img.tags || query,
-                        width: img.imageWidth,
-                        height: img.imageHeight,
-                        source: 'pixabay'
-                    });
-                }
+        if (data?.hits) {
+            data.hits.forEach(img => {
+                images.push({
+                    url: img.largeImageURL,
+                    thumbnail: img.previewURL,
+                    title: img.tags || query,
+                    width: img.imageWidth,
+                    height: img.imageHeight
+                });
             });
         }
 
         res.json({
             query: query,
             total_images: images.length,
-            images: images,
-            sources_used: {
-                searchcom: searchComData.status === 'fulfilled',
-                pixabay: pixabayData.status === 'fulfilled'
-            }
+            images: images
         });
 
     } catch (error) {
         console.error('Image search error:', error);
         res.status(500).json({ 
             error: 'Image search failed',
+            message: error.message 
+        });
+    }
+});
+
+// AI GENERATION - Search.com
+app.get('/api/search/ai', async (req, res) => {
+    const query = req.query.q;
+    
+    if (!query) {
+        return res.status(400).json({ error: 'Query is required' });
+    }
+
+    try {
+        const data = await generateAIContent(query);
+        res.json(data);
+
+    } catch (error) {
+        console.error('AI generation error:', error);
+        res.status(500).json({ 
+            error: 'AI generation failed',
             message: error.message 
         });
     }
