@@ -17,12 +17,13 @@ app.get('/opensearch.xml', (req, res) => {
 
 app.use(express.static('public')); // Serve frontend files
 
-// Helper function to fetch from Mojeek
-async function fetchMojeek(query) {
+// Helper function to fetch from Mojeek with pagination
+async function fetchMojeek(query, page = 1) {
     const params = new URLSearchParams({
         api_key: process.env.MOJEEK_API_KEY,
         q: query,
-        fmt: 'json'
+        fmt: 'json',
+        s: (page - 1) * 10  // Mojeek uses 's' for start position (0, 10, 20, etc.)
     });
 
     const response = await fetch(`https://www.mojeek.com/search?${params.toString()}`, {
@@ -34,13 +35,14 @@ async function fetchMojeek(query) {
     return await response.json();
 }
 
-// Helper function to fetch images from Pixabay
-async function fetchPixabay(query) {
+// Helper function to fetch images from Pixabay with pagination
+async function fetchPixabay(query, page = 1) {
     const params = new URLSearchParams({
         key: process.env.PIXABAY_API_KEY,
         q: query,
         image_type: 'photo',
-        per_page: 30
+        per_page: 200,  // Maximum allowed by Pixabay API
+        page: page
     });
 
     const response = await fetch(`https://pixabay.com/api/?${params.toString()}`);
@@ -66,16 +68,17 @@ async function generateAIContent(prompt) {
     return await response.json();
 }
 
-// WEB SEARCH - Mojeek only
+// WEB SEARCH - Mojeek only with pagination
 app.get('/api/search/web', async (req, res) => {
     const query = req.query.q;
+    const page = parseInt(req.query.page) || 1;
     
     if (!query) {
         return res.status(400).json({ error: 'Search query is required' });
     }
 
     try {
-        const data = await fetchMojeek(query);
+        const data = await fetchMojeek(query, page);
         
         // Normalize response
         const results = [];
@@ -89,9 +92,16 @@ app.get('/api/search/web', async (req, res) => {
             });
         }
 
+        // Get total hits from Mojeek response
+        const totalHits = data?.response?.head?.hits || 0;
+        const resultsPerPage = 10;
+
         res.json({
             query: query,
+            page: page,
             total_results: results.length,
+            total_available: totalHits,
+            has_more: totalHits > (page * resultsPerPage),
             results: results
         });
 
@@ -104,16 +114,17 @@ app.get('/api/search/web', async (req, res) => {
     }
 });
 
-// IMAGE SEARCH - Pixabay only
+// IMAGE SEARCH - Pixabay only with pagination
 app.get('/api/search/images', async (req, res) => {
     const query = req.query.q;
+    const page = parseInt(req.query.page) || 1;
     
     if (!query) {
         return res.status(400).json({ error: 'Search query is required' });
     }
 
     try {
-        const data = await fetchPixabay(query);
+        const data = await fetchPixabay(query, page);
         
         const images = [];
         if (data?.hits) {
@@ -130,7 +141,10 @@ app.get('/api/search/images', async (req, res) => {
 
         res.json({
             query: query,
+            page: page,
             total_images: images.length,
+            total_available: data.totalHits || 0,
+            has_more: data.totalHits > (page * 200),
             images: images
         });
 
