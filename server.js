@@ -95,13 +95,16 @@ app.get('/api/search/web', async (req, res) => {
         // Get total hits from Mojeek response
         const totalHits = data?.response?.head?.hits || 0;
         const resultsPerPage = 10;
+        const currentResultCount = page * resultsPerPage;
+
+        console.log(`Mojeek search: "${query}" - Page ${page} - Total hits: ${totalHits} - Results on page: ${results.length}`);
 
         res.json({
             query: query,
             page: page,
             total_results: results.length,
             total_available: totalHits,
-            has_more: totalHits > (page * resultsPerPage),
+            has_more: currentResultCount < totalHits && results.length > 0,
             results: results
         });
 
@@ -139,12 +142,19 @@ app.get('/api/search/images', async (req, res) => {
             });
         }
 
+        const totalHits = data.totalHits || 0;
+        const imagesPerPage = 200;
+        const currentImageCount = page * imagesPerPage;
+
+        console.log(`Pixabay search: "${query}" - Page ${page} - Total hits: ${totalHits} - Images on page: ${images.length}`);
+        console.log(`Has more: ${currentImageCount < totalHits && images.length > 0}`);
+
         res.json({
             query: query,
             page: page,
             total_images: images.length,
-            total_available: data.totalHits || 0,
-            has_more: data.totalHits > (page * 200),
+            total_available: totalHits,
+            has_more: currentImageCount < totalHits && images.length > 0,
             images: images
         });
 
