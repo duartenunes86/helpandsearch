@@ -167,13 +167,20 @@ app.get('/api/search/images', async (req, res) => {
             fetchOpenverse(query, page)
         ]);
         
-        console.log(`Pixabay response for "${query}" page ${page}:`, JSON.stringify(pixabayData.value?.totalHits || 0));
-        console.log(`Openverse response for "${query}" page ${page}:`, JSON.stringify(openverseData.value?.result_count || 0));
+        console.log('=== IMAGE SEARCH DEBUG ===');
+        console.log(`Query: "${query}", Page: ${page}`);
+        console.log(`Pixabay status: ${pixabayData.status}`);
+        console.log(`Pixabay totalHits: ${pixabayData.value?.totalHits || 0}`);
+        console.log(`Pixabay results count: ${pixabayData.value?.hits?.length || 0}`);
+        console.log(`Openverse status: ${openverseData.status}`);
+        console.log(`Openverse result_count: ${openverseData.value?.result_count || 0}`);
+        console.log(`Openverse results count: ${openverseData.value?.results?.length || 0}`);
         
         const images = [];
         const seenUrls = new Set();
         
         // Extract Pixabay images
+        let pixabayCount = 0;
         if (pixabayData.status === 'fulfilled' && pixabayData.value?.hits) {
             pixabayData.value.hits.forEach(img => {
                 const url = img.largeImageURL;
@@ -187,11 +194,13 @@ app.get('/api/search/images', async (req, res) => {
                         height: img.imageHeight,
                         source: 'pixabay'
                     });
+                    pixabayCount++;
                 }
             });
         }
         
         // Extract Openverse images
+        let openverseCount = 0;
         if (openverseData.status === 'fulfilled' && openverseData.value?.results) {
             openverseData.value.results.forEach(img => {
                 const url = img.url;
@@ -205,27 +214,33 @@ app.get('/api/search/images', async (req, res) => {
                         height: img.height,
                         source: 'openverse'
                     });
+                    openverseCount++;
                 }
             });
         }
+        
+        console.log(`Images added - Pixabay: ${pixabayCount}, Openverse: ${openverseCount}, Total: ${images.length}`);
 
-        // Calculate total available and has_more
+        // Calculate total available from BOTH sources
         const pixabayTotal = pixabayData.status === 'fulfilled' ? (pixabayData.value?.totalHits || 0) : 0;
         const openverseTotal = openverseData.status === 'fulfilled' ? (openverseData.value?.result_count || 0) : 0;
         const totalAvailable = pixabayTotal + openverseTotal;
         
-        const imagesPerPage = 400; // 200 from each API
-        const currentImageCount = page * imagesPerPage;
+        // Check if there are more pages available from EITHER source
+        const pixabayHasMore = pixabayTotal > (page * 200);
+        const openverseHasMore = openverseTotal > (page * 200);
+        const hasMore = pixabayHasMore || openverseHasMore;
 
-        console.log(`Mixed images: Pixabay=${pixabayTotal}, Openverse=${openverseTotal}, Total=${totalAvailable}`);
-        console.log(`Images on this page=${images.length}, Has more: ${currentImageCount < totalAvailable && images.length > 0}`);
+        console.log(`Total available: Pixabay=${pixabayTotal}, Openverse=${openverseTotal}, Combined=${totalAvailable}`);
+        console.log(`Has more pages: ${hasMore} (Pixabay: ${pixabayHasMore}, Openverse: ${openverseHasMore})`);
+        console.log('=========================');
 
         res.json({
             query: query,
             page: page,
             total_images: images.length,
             total_available: totalAvailable,
-            has_more: currentImageCount < totalAvailable && images.length > 0,
+            has_more: hasMore,
             sources_used: {
                 pixabay: pixabayData.status === 'fulfilled' && pixabayData.value?.hits?.length > 0,
                 openverse: openverseData.status === 'fulfilled' && openverseData.value?.results?.length > 0
