@@ -391,6 +391,36 @@
             display: block;
         }
 
+        /* Load More Button */
+        .load-more-btn {
+            display: block;
+            margin: 30px auto;
+            padding: 12px 32px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(26,115,232,0.3);
+        }
+
+        .load-more-btn:hover {
+            background: #1557b0;
+            box-shadow: 0 4px 12px rgba(26,115,232,0.4);
+            transform: translateY(-2px);
+        }
+
+        .load-more-btn:disabled {
+            background: #dadce0;
+            color: #5f6368;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
         /* AI Results */
         .ai-response {
             background: white;
@@ -605,6 +635,10 @@
         // Current search state
         let currentQuery = '';
         let currentTab = 'web';
+        let currentPage = 1;
+        let currentWebPage = 1;
+        let hasMoreImages = false;
+        let hasMoreWebResults = false;
 
         // Handle Enter key
         document.getElementById('homeSearchInput').addEventListener('keypress', (e) => {
@@ -643,8 +677,10 @@
             // If switching tabs and we have a query, fetch new results
             if (currentQuery) {
                 if (tab === 'web' && document.getElementById('webResults').innerHTML === '') {
+                    currentWebPage = 1; // Reset page when switching to web
                     performSearch();
                 } else if (tab === 'images' && document.getElementById('imageResults').innerHTML === '') {
+                    currentPage = 1; // Reset page when switching to images
                     performSearch();
                 } else if (tab === 'ai' && document.getElementById('aiResults').innerHTML === '') {
                     performSearch();
@@ -666,6 +702,12 @@
 
             if (!query) return;
 
+            // Reset pages if it's a new query
+            if (currentQuery !== query) {
+                currentPage = 1;
+                currentWebPage = 1;
+            }
+            
             currentQuery = query;
 
             // Sync both search boxes
@@ -682,9 +724,9 @@
 
             try {
                 if (currentTab === 'web') {
-                    await fetchWebResults(query);
+                    await fetchWebResults(query, currentWebPage);
                 } else if (currentTab === 'images') {
-                    await fetchImageResults(query);
+                    await fetchImageResults(query, currentPage);
                 } else if (currentTab === 'ai') {
                     await fetchAIResults(query);
                 }
@@ -696,26 +738,26 @@
             }
         }
 
-        async function fetchWebResults(query) {
-            const response = await fetch(`/api/search/web?q=${encodeURIComponent(query)}`);
+        async function fetchWebResults(query, page = 1) {
+            const response = await fetch(`/api/search/web?q=${encodeURIComponent(query)}&page=${page}`);
             
             if (!response.ok) {
                 throw new Error(`Server error: ${response.status}`);
             }
 
             const data = await response.json();
-            displayWebResults(data);
+            displayWebResults(data, page === 1);
         }
 
-        async function fetchImageResults(query) {
-            const response = await fetch(`/api/search/images?q=${encodeURIComponent(query)}`);
+        async function fetchImageResults(query, page = 1) {
+            const response = await fetch(`/api/search/images?q=${encodeURIComponent(query)}&page=${page}`);
             
             if (!response.ok) {
                 throw new Error(`Server error: ${response.status}`);
             }
 
             const data = await response.json();
-            displayImageResults(data);
+            displayImageResults(data, page === 1);
         }
 
         async function fetchAIResults(query) {
@@ -729,22 +771,36 @@
             displayAIResults(data);
         }
 
-        function displayWebResults(data) {
+        function displayWebResults(data, clearResults = true) {
             document.getElementById('loading').classList.add('hidden');
             const resultsDiv = document.getElementById('webResults');
             const statsDiv = document.getElementById('stats');
 
             // Check if we have results
             if (!data.results || data.results.length === 0) {
-                resultsDiv.innerHTML = '<p style="color: #5f6368;">No results found.</p>';
+                if (clearResults) {
+                    resultsDiv.innerHTML = '<p style="color: #5f6368;">No results found.</p>';
+                }
                 return;
             }
 
-            // Display stats
-            statsDiv.textContent = `About ${data.total_results} results`;
+            // Update stats
+            const totalShown = currentWebPage * 10 > data.total_available ? data.total_available : currentWebPage * 10;
+            statsDiv.textContent = `About ${data.total_available.toLocaleString()} results`;
 
-            // Clear previous results
-            resultsDiv.innerHTML = '';
+            // Store if there are more results
+            hasMoreWebResults = data.has_more;
+
+            // Clear previous results if needed
+            if (clearResults) {
+                resultsDiv.innerHTML = '';
+            } else {
+                // Remove existing Load More button if present
+                const existingBtn = document.getElementById('loadMoreWebBtn');
+                if (existingBtn) {
+                    existingBtn.remove();
+                }
+            }
             
             // Display results
             data.results.forEach(result => {
@@ -765,25 +821,60 @@
 
                 resultsDiv.appendChild(resultItem);
             });
+
+            // Add Load More button if there are more results
+            if (hasMoreWebResults) {
+                const loadMoreBtn = document.createElement('button');
+                loadMoreBtn.id = 'loadMoreWebBtn';
+                loadMoreBtn.className = 'load-more-btn';
+                loadMoreBtn.textContent = 'Load More Results';
+                loadMoreBtn.onclick = loadMoreWebResults;
+                resultsDiv.appendChild(loadMoreBtn);
+            }
         }
 
-        function displayImageResults(data) {
+        async function loadMoreWebResults() {
+            const btn = document.getElementById('loadMoreWebBtn');
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+
+            try {
+                currentWebPage++;
+                await fetchWebResults(currentQuery, currentWebPage);
+            } catch (error) {
+                console.error('Error loading more results:', error);
+                btn.disabled = false;
+                btn.textContent = 'Error - Try Again';
+            }
+        }
+
+        function displayImageResults(data, clearResults = true) {
             document.getElementById('loading').classList.add('hidden');
             const resultsDiv = document.getElementById('imageResults');
             const statsDiv = document.getElementById('stats');
 
             // Check if we have images
             if (!data.images || data.images.length === 0) {
-                resultsDiv.innerHTML = '<p style="color: #5f6368;">No images found.</p>';
+                if (clearResults) {
+                    resultsDiv.innerHTML = '<p style="color: #5f6368;">No images found.</p>';
+                }
                 return;
             }
 
-            // Display stats without showing source names
-            statsDiv.textContent = `${data.total_images} images`;
+            // Update stats with total available
+            statsDiv.textContent = `Showing ${currentPage * 200 > data.total_available ? data.total_available : currentPage * 200} of ${data.total_available} images`;
 
-            // Clear previous results
-            resultsDiv.innerHTML = '<div class="image-grid" id="imageGrid"></div>';
-            const imageGrid = document.getElementById('imageGrid');
+            // Store if there are more images
+            hasMoreImages = data.has_more;
+
+            // Clear or get existing grid
+            let imageGrid;
+            if (clearResults) {
+                resultsDiv.innerHTML = '<div class="image-grid" id="imageGrid"></div>';
+                imageGrid = document.getElementById('imageGrid');
+            } else {
+                imageGrid = document.getElementById('imageGrid');
+            }
             
             // Display images without source badges
             data.images.forEach(img => {
@@ -797,6 +888,37 @@
 
                 imageGrid.appendChild(imageItem);
             });
+
+            // Remove existing Load More button if present
+            const existingBtn = document.getElementById('loadMoreBtn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+
+            // Add Load More button if there are more images
+            if (hasMoreImages) {
+                const loadMoreBtn = document.createElement('button');
+                loadMoreBtn.id = 'loadMoreBtn';
+                loadMoreBtn.className = 'load-more-btn';
+                loadMoreBtn.textContent = `Load More Images (${data.total_available - (currentPage * 200)} remaining)`;
+                loadMoreBtn.onclick = loadMoreImages;
+                resultsDiv.appendChild(loadMoreBtn);
+            }
+        }
+
+        async function loadMoreImages() {
+            const btn = document.getElementById('loadMoreBtn');
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+
+            try {
+                currentPage++;
+                await fetchImageResults(currentQuery, currentPage);
+            } catch (error) {
+                console.error('Error loading more images:', error);
+                btn.disabled = false;
+                btn.textContent = 'Error - Try Again';
+            }
         }
 
         function displayAIResults(data) {
