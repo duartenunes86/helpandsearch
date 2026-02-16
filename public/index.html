@@ -674,13 +674,31 @@
             document.getElementById('imageResults').classList.toggle('hidden', tab !== 'images');
             document.getElementById('aiResults').classList.toggle('hidden', tab !== 'ai');
             
-            // If switching tabs and we have a query, fetch new results
+            // Update stats based on current tab
+            const statsDiv = document.getElementById('stats');
+            
+            if (tab === 'web' && document.getElementById('webResults').innerHTML !== '') {
+                // Show web stats if we have results
+                const totalResults = document.querySelectorAll('#webResults .result-item').length;
+                statsDiv.textContent = `Showing ${totalResults} results`;
+            } else if (tab === 'images' && document.getElementById('imageGrid')) {
+                // Show image stats if we have images
+                const totalImages = document.getElementById('imageGrid').children.length;
+                statsDiv.textContent = `${totalImages} images`;
+            } else if (tab === 'ai') {
+                // Hide stats for AI
+                statsDiv.textContent = '';
+            } else {
+                statsDiv.textContent = '';
+            }
+            
+            // If no results for this tab, fetch them
             if (currentQuery) {
                 if (tab === 'web' && document.getElementById('webResults').innerHTML === '') {
-                    currentWebPage = 1; // Reset page when switching to web
+                    currentWebPage = 1;
                     performSearch();
                 } else if (tab === 'images' && document.getElementById('imageResults').innerHTML === '') {
-                    currentPage = 1; // Reset page when switching to images
+                    currentPage = 1;
                     performSearch();
                 } else if (tab === 'ai' && document.getElementById('aiResults').innerHTML === '') {
                     performSearch();
@@ -776,6 +794,11 @@
             const resultsDiv = document.getElementById('webResults');
             const statsDiv = document.getElementById('stats');
 
+            console.log('Web results data:', data);
+            console.log('Has more results:', data.has_more);
+            console.log('Total available:', data.total_available);
+            console.log('Current page:', currentWebPage);
+
             // Check if we have results
             if (!data.results || data.results.length === 0) {
                 if (clearResults) {
@@ -786,7 +809,7 @@
 
             // Update stats
             const totalShown = currentWebPage * 10 > data.total_available ? data.total_available : currentWebPage * 10;
-            statsDiv.textContent = `About ${data.total_available.toLocaleString()} results`;
+            statsDiv.textContent = `About ${data.total_available.toLocaleString()} results (showing ${totalShown})`;
 
             // Store if there are more results
             hasMoreWebResults = data.has_more;
@@ -823,13 +846,17 @@
             });
 
             // Add Load More button if there are more results
+            console.log('Should show load more button:', hasMoreWebResults);
             if (hasMoreWebResults) {
                 const loadMoreBtn = document.createElement('button');
                 loadMoreBtn.id = 'loadMoreWebBtn';
                 loadMoreBtn.className = 'load-more-btn';
-                loadMoreBtn.textContent = 'Load More Results';
+                loadMoreBtn.textContent = `Load More Results (Page ${currentWebPage + 1})`;
                 loadMoreBtn.onclick = loadMoreWebResults;
                 resultsDiv.appendChild(loadMoreBtn);
+                console.log('Load More button added!');
+            } else {
+                console.log('No more results available - button not shown');
             }
         }
 
@@ -853,6 +880,12 @@
             const resultsDiv = document.getElementById('imageResults');
             const statsDiv = document.getElementById('stats');
 
+            console.log('Image results data:', data);
+            console.log('Has more images:', data.has_more);
+            console.log('Total available images:', data.total_available);
+            console.log('Images on this page:', data.images ? data.images.length : 0);
+            console.log('Current page:', currentPage);
+
             // Check if we have images
             if (!data.images || data.images.length === 0) {
                 if (clearResults) {
@@ -862,7 +895,8 @@
             }
 
             // Update stats with total available
-            statsDiv.textContent = `Showing ${currentPage * 200 > data.total_available ? data.total_available : currentPage * 200} of ${data.total_available} images`;
+            const totalShown = Math.min(currentPage * 200, data.total_available);
+            statsDiv.textContent = `Showing ${totalShown} of ${data.total_available} images`;
 
             // Store if there are more images
             hasMoreImages = data.has_more;
@@ -874,6 +908,11 @@
                 imageGrid = document.getElementById('imageGrid');
             } else {
                 imageGrid = document.getElementById('imageGrid');
+                // Remove existing Load More button if present
+                const existingBtn = document.getElementById('loadMoreBtn');
+                if (existingBtn) {
+                    existingBtn.remove();
+                }
             }
             
             // Display images without source badges
@@ -889,20 +928,19 @@
                 imageGrid.appendChild(imageItem);
             });
 
-            // Remove existing Load More button if present
-            const existingBtn = document.getElementById('loadMoreBtn');
-            if (existingBtn) {
-                existingBtn.remove();
-            }
-
             // Add Load More button if there are more images
+            console.log('Should show image load more button:', hasMoreImages);
             if (hasMoreImages) {
+                const remaining = data.total_available - (currentPage * 200);
                 const loadMoreBtn = document.createElement('button');
                 loadMoreBtn.id = 'loadMoreBtn';
                 loadMoreBtn.className = 'load-more-btn';
-                loadMoreBtn.textContent = `Load More Images (${data.total_available - (currentPage * 200)} remaining)`;
+                loadMoreBtn.textContent = `Load More Images (${remaining} remaining)`;
                 loadMoreBtn.onclick = loadMoreImages;
                 resultsDiv.appendChild(loadMoreBtn);
+                console.log('Image Load More button added! Remaining:', remaining);
+            } else {
+                console.log('No more images available - button not shown');
             }
         }
 
