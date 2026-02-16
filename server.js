@@ -80,6 +80,9 @@ app.get('/api/search/web', async (req, res) => {
     try {
         const data = await fetchMojeek(query, page);
         
+        // Log the full response to see structure
+        console.log('Mojeek response structure:', JSON.stringify(data, null, 2));
+        
         // Normalize response
         const results = [];
         if (data?.response?.results) {
@@ -92,12 +95,30 @@ app.get('/api/search/web', async (req, res) => {
             });
         }
 
-        // Get total hits from Mojeek response
-        const totalHits = data?.response?.head?.hits || 0;
+        // Try multiple possible locations for total hits
+        let totalHits = 0;
+        if (data?.response?.head?.hits) {
+            totalHits = parseInt(data.response.head.hits);
+        } else if (data?.response?.hits) {
+            totalHits = parseInt(data.response.hits);
+        } else if (data?.hits) {
+            totalHits = parseInt(data.hits);
+        } else if (data?.response?.head?.results) {
+            totalHits = parseInt(data.response.head.results);
+        }
+        
+        // If we still don't have a total, estimate based on whether we got full results
+        if (totalHits === 0 && results.length === 10) {
+            totalHits = 1000; // Conservative estimate
+        } else if (totalHits === 0) {
+            totalHits = results.length;
+        }
+
         const resultsPerPage = 10;
         const currentResultCount = page * resultsPerPage;
 
         console.log(`Mojeek search: "${query}" - Page ${page} - Total hits: ${totalHits} - Results on page: ${results.length}`);
+        console.log(`Has more: ${currentResultCount < totalHits && results.length > 0}`);
 
         res.json({
             query: query,
@@ -129,6 +150,9 @@ app.get('/api/search/images', async (req, res) => {
     try {
         const data = await fetchPixabay(query, page);
         
+        // Log what Pixabay returns
+        console.log(`Pixabay response for "${query}" page ${page}:`, JSON.stringify(data, null, 2));
+        
         const images = [];
         if (data?.hits) {
             data.hits.forEach(img => {
@@ -146,7 +170,7 @@ app.get('/api/search/images', async (req, res) => {
         const imagesPerPage = 200;
         const currentImageCount = page * imagesPerPage;
 
-        console.log(`Pixabay search: "${query}" - Page ${page} - Total hits: ${totalHits} - Images on page: ${images.length}`);
+        console.log(`Pixabay: Total available=${totalHits}, Images on page=${images.length}, Page=${page}`);
         console.log(`Has more: ${currentImageCount < totalHits && images.length > 0}`);
 
         res.json({
