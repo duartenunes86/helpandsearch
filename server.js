@@ -50,6 +50,19 @@ async function fetchPixabay(query, page = 1) {
     return await response.json();
 }
 
+// Helper function to fetch images from Openverse (NO API KEY NEEDED!)
+async function fetchOpenverse(query, page = 1) {
+    const params = new URLSearchParams({
+        q: query,
+        page_size: 200,  // Get 200 images per page
+        page: page
+    });
+
+    const response = await fetch(`https://api.openverse.org/v1/images/?${params.toString()}`);
+    if (!response.ok) throw new Error(`Openverse API error: ${response.status}`);
+    return await response.json();
+}
+
 // Helper function to generate AI response from Search.com
 async function generateAIContent(prompt) {
     const params = new URLSearchParams({
@@ -138,7 +151,7 @@ app.get('/api/search/web', async (req, res) => {
     }
 });
 
-// IMAGE SEARCH - Pixabay only with pagination
+// IMAGE SEARCH - Pixabay + Openverse (both FREE!) with pagination
 app.get('/api/search/images', async (req, res) => {
     const query = req.query.q;
     const page = parseInt(req.query.page) || 1;
@@ -148,37 +161,75 @@ app.get('/api/search/images', async (req, res) => {
     }
 
     try {
-        const data = await fetchPixabay(query, page);
+        // Fetch from both APIs in parallel
+        const [pixabayData, openverseData] = await Promise.allSettled([
+            fetchPixabay(query, page),
+            fetchOpenverse(query, page)
+        ]);
         
-        // Log what Pixabay returns
-        console.log(`Pixabay response for "${query}" page ${page}:`, JSON.stringify(data, null, 2));
+        console.log(`Pixabay response for "${query}" page ${page}:`, JSON.stringify(pixabayData.value?.totalHits || 0));
+        console.log(`Openverse response for "${query}" page ${page}:`, JSON.stringify(openverseData.value?.result_count || 0));
         
         const images = [];
-        if (data?.hits) {
-            data.hits.forEach(img => {
-                images.push({
-                    url: img.largeImageURL,
-                    thumbnail: img.previewURL,
-                    title: img.tags || query,
-                    width: img.imageWidth,
-                    height: img.imageHeight
-                });
+        const seenUrls = new Set();
+        
+        // Extract Pixabay images
+        if (pixabayData.status === 'fulfilled' && pixabayData.value?.hits) {
+            pixabayData.value.hits.forEach(img => {
+                const url = img.largeImageURL;
+                if (!seenUrls.has(url)) {
+                    seenUrls.add(url);
+                    images.push({
+                        url: url,
+                        thumbnail: img.previewURL,
+                        title: img.tags || query,
+                        width: img.imageWidth,
+                        height: img.imageHeight,
+                        source: 'pixabay'
+                    });
+                }
+            });
+        }
+        
+        // Extract Openverse images
+        if (openverseData.status === 'fulfilled' && openverseData.value?.results) {
+            openverseData.value.results.forEach(img => {
+                const url = img.url;
+                if (!seenUrls.has(url)) {
+                    seenUrls.add(url);
+                    images.push({
+                        url: url,
+                        thumbnail: img.thumbnail || url,
+                        title: img.title || query,
+                        width: img.width,
+                        height: img.height,
+                        source: 'openverse'
+                    });
+                }
             });
         }
 
-        const totalHits = data.totalHits || 0;
-        const imagesPerPage = 200;
+        // Calculate total available and has_more
+        const pixabayTotal = pixabayData.status === 'fulfilled' ? (pixabayData.value?.totalHits || 0) : 0;
+        const openverseTotal = openverseData.status === 'fulfilled' ? (openverseData.value?.result_count || 0) : 0;
+        const totalAvailable = pixabayTotal + openverseTotal;
+        
+        const imagesPerPage = 400; // 200 from each API
         const currentImageCount = page * imagesPerPage;
 
-        console.log(`Pixabay: Total available=${totalHits}, Images on page=${images.length}, Page=${page}`);
-        console.log(`Has more: ${currentImageCount < totalHits && images.length > 0}`);
+        console.log(`Mixed images: Pixabay=${pixabayTotal}, Openverse=${openverseTotal}, Total=${totalAvailable}`);
+        console.log(`Images on this page=${images.length}, Has more: ${currentImageCount < totalAvailable && images.length > 0}`);
 
         res.json({
             query: query,
             page: page,
             total_images: images.length,
-            total_available: totalHits,
-            has_more: currentImageCount < totalHits && images.length > 0,
+            total_available: totalAvailable,
+            has_more: currentImageCount < totalAvailable && images.length > 0,
+            sources_used: {
+                pixabay: pixabayData.status === 'fulfilled' && pixabayData.value?.hits?.length > 0,
+                openverse: openverseData.status === 'fulfilled' && openverseData.value?.results?.length > 0
+            },
             images: images
         });
 
